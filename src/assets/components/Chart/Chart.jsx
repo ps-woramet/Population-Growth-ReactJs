@@ -6,12 +6,14 @@ const Chart = () => {
 
   useEffect(()=> {
 
+    // สร้าง object Root ของ amCharts5 และผูกกับ HTML 
     var root = am5.Root.new("chartdiv");
 
     const url = 'https://woramet-bar-chart-race.onrender.com/api/data';
     fetchData(url).then(data=>{showChart(root, data)})
     
     return () => {
+        // ทำลาย หรือลบทิ้ง object Root
         root.dispose();
     };
 

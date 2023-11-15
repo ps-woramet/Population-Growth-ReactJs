@@ -11,6 +11,7 @@ export function showChart(root, jsonData){
         // https://www.amcharts.com/docs/v5/getting-started/#Root_element
         // var root = am5.Root.new("chartdiv");
       
+        // กำหนดการจัดรูปแบบตัวเลข
         root.numberFormatter.setAll({
         // (จัดรูปแบบเป็นแบบมี comma และไม่มีค่าอะไรต่อหลังทศนิยม)
         numberFormat: "#,###.",
@@ -23,6 +24,7 @@ export function showChart(root, jsonData){
         ],
       
         // Do not use small number prefixes at all
+        // กำหนดให้ไม่มีคำนำหน้า (prefix) ใด ๆ
         smallNumberPrefixes: []
         });
       
@@ -31,14 +33,20 @@ export function showChart(root, jsonData){
         
         // Set themes
         // https://www.amcharts.com/docs/v5/concepts/themes/
+        // สร้าง object ของธีมที่ชื่อ "Animated" และผูกกับ Root ของ amCharts5
+        // themes "Animated" มักจะมีการเพิ่มเอฟเฟ็กต์แอนิเมชันที่ทำให้แผนภูมิหรือกราฟมีการเคลื่อนไหว.
         root.setThemes([am5themes_Animated.new(root)]); 
         
         // Create chart
         // https://www.amcharts.com/docs/v5/charts/xy-chart/
         var chart = root.container.children.push(am5xy.XYChart.new(root, {
+            // ลากแผนภูมิไปทางแนวแกน X
             panX: true,
+            // ลากแผนภูมิไปทางแนวแกน Y
             panY: true,
+            // ไม่สามารถลากแผนภูมิไปทางแนวแกน X
             wheelX: "none",
+            // ไม่สามารถลากแผนภูมิไปทางแนวแกน Y
             wheelY: "none"
         }));
 
@@ -57,23 +65,29 @@ export function showChart(root, jsonData){
         yRenderer.grid.template.set("visible", false);
         
         var yAxis = chart.yAxes.push(am5xy.CategoryAxis.new(root, {
+            // Deviation ส่วนเบี่ยงเบน
             maxDeviation: 0,
             categoryField: "myCountry",
+            // ใช้ในการวาดแกน Y
             renderer: yRenderer,
         }));
 
         var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
             maxDeviation: 0,
             min: 0,
+            // ทำให้ค่า Min และ Max นั้นเป็นค่าที่ต้องการอย่างเคร่งครัด
             strictMinMax: true,
+            // กำหนดค่า extraMax เพื่อเพิ่มค่าสูงสุด (max value) อีก 0.1 ของช่วง
             extraMax: 0.1,
             renderer: am5xy.AxisRendererX.new(root, {
                 // x axis to top, ตรงกันข้าม
                 opposite: true
             }),
         }));
-      
+        
+        // กำหนดระยะเวลาที่ใช้ในการทำนายข้อมูลในกรณีที่มีการเปลี่ยนแปลง
         xAxis.set("interpolationDuration", stepDuration / 10);
+        // กำหนดฟังก์ชันที่ทำให้การทำนายเป็นเส้นตรง (linear interpolation)
         xAxis.set("interpolationEasing", am5.ease.linear);
     
         // Add series
@@ -86,6 +100,7 @@ export function showChart(root, jsonData){
         }));
         
         // Rounded corners for columns
+        // corner radius bottom-right, corner radius top-right
         series.columns.template.setAll({ cornerRadiusBR: 5, cornerRadiusTR: 5 });
 
         // ขนาดกราฟ
@@ -192,10 +207,10 @@ export function showChart(root, jsonData){
         // Get series item by category
         function getSeriesItem(category) {
             for (var i = 0; i < series.dataItems.length; i++) {
-            var dataItem = series.dataItems[i];
-            if (dataItem.get("categoryY") == category) {
-                return dataItem;
-            }
+              var dataItem = series.dataItems[i];
+              if (dataItem.get("categoryY") == category) {
+                  return dataItem;
+              }
             }
         }
       
@@ -213,38 +228,39 @@ export function showChart(root, jsonData){
             am5.array.each(yAxis.dataItems, function (dataItem) {
             
             // get corresponding series item
+            // รับค่ารายการ series ที่เกี่ยวข้อง
             var seriesDataItem = getSeriesItem(dataItem.get("category"));
         
             if (seriesDataItem) {
                 // get index of series data item
                 var index = series.dataItems.indexOf(seriesDataItem);
                 // calculate delta position
-                var deltaPosition =
-                (index - dataItem.get("index", 0)) / series.dataItems.length;
+                // คำนวณ delta position หรือตำแหน่งที่เปลี่ยนแปลงไป เทียบกับ index ของ dataItem ที่กำลังพิจารณา
+                var deltaPosition = (index - dataItem.get("index", 0)) / series.dataItems.length;
                 // set index to be the same as series data item index
                 if (dataItem.get("index") != index) {
-                dataItem.set("index", index);
-                // set deltaPosition instanlty
-                dataItem.set("deltaPosition", -deltaPosition);
-                // animate delta position to 0
-                dataItem.animate({
-                    key: "deltaPosition",
-                    to: 0,
-                    duration: stepDuration / 2,
-                    easing: am5.ease.out(am5.ease.cubic)
+                  dataItem.set("index", index);
+                  // set deltaPosition instanlty
+                  dataItem.set("deltaPosition", -deltaPosition);
+                  // animate delta position to 0
+                  dataItem.animate({
+                      key: "deltaPosition",
+                      to: 0,
+                      duration: stepDuration / 2,
+                      easing: am5.ease.out(am5.ease.cubic)
                 });
                 }
             }
         });
         // sort axis items by index.
         // This changes the order instantly, but as deltaPosition is set, they keep in the same places and then animate to true positions.
+        // เรียงลำดับ dataItems ของแกน Y ของแผนภูมิหรือ กราฟที่เกี่ยวข้องกับ yAxis
         yAxis.dataItems.sort(function (x, y) {
           return x.get("index") - y.get("index");
         });
-
       }
       
-      // update data with values each 1.5 sec
+      // update data with values each 0.1 sec
       var interval = setInterval(function () {
         year++;
       
